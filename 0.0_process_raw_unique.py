@@ -1,37 +1,50 @@
 import pandas as pd
 import numpy as np
-import nltk
 import re
 from tqdm import tqdm
+from nltk import RegexpTokenizer
 
-### Files name
+# -- Constructing tokenizer
+
+tokenizer = RegexpTokenizer(r'''\w'|\w+|[^\w\s]''')
+
+# -- Folders path names
 
 data_to_test_path = "/home/gguex/Documents/data/impresso/JDG/JDG-1997.jsonl.bz2"
 output_file_path = "JDG-1997_new.txt"
 
-### Importing lexique dataset
+# -- Defining forbidden words
 
-# Defining forbidden words
 forbidden_words = ["q", "w", "e", "r", "t", "z", "u", "i", "o", "p", "s", "d", "f", "g", "h", "j", "k", "l", "x", "c",
                    "v", "b", "n", "m"]
 
-# Importing lexique with word frequencies
+# -- Importing lexical dataset and Lexical treatments
+
 lexique = pd.read_csv("/home/gguex/Documents/data/lexique_fr/Lexique383.tsv", sep="\t")
 
-# lexical treatments
+# Adding frequencies
 lexique["freqtot"] = lexique["freqfilms2"] + lexique["freqlivres"]
+# Keeping only words and frequency columns
 lexique = lexique[["ortho", "freqtot"]]
+# Aggregating same word type
 lexique.groupby("ortho").sum()
+# Removing forbidden words
 lexique = lexique.drop(lexique[lexique.ortho.isin(forbidden_words)].index)
+# Sorting by decreasing frequencies
 lexique = lexique.sort_values("freqtot", ascending=False, ignore_index=True)
+# Rewriting index
 lexique.reset_index()
+# Computing "cost"
 lexique["cost"] = lexique["freqtot"] / sum(lexique["freqtot"])
+# Building dictionary
 words = list(lexique["ortho"])
 
+# Building wordcost dict and max length of word
 wordcost = dict((row["ortho"], np.log((i + 1) * np.log(len(words)))) for i, row in lexique.iterrows())
 maxword = max(len(str(x)) for x in words)
 
-#### Infer spaces function for non-splitted words
+
+# -- Infer spaces function for non-splitted words
 
 def infer_spaces(s):
     """Uses dynamic programming to infer the location of spaces in a string
@@ -40,9 +53,9 @@ def infer_spaces(s):
     # Find the best match for the i first characters, assuming cost has
     # been built for the i-1 first characters.
     # Returns a pair (match_cost, match_length).
-    def best_match(i):
-        candidates = enumerate(reversed(cost[max(0, i - maxword):i]))
-        return min((c + wordcost.get(s[i - k - 1:i], 9e999), k + 1) for k, c in candidates)
+    def best_match(it):
+        candidates = enumerate(reversed(cost[max(0, it - maxword):it]))
+        return min((ci + wordcost.get(s[it - ki - 1:it], 9e999), ki + 1) for ki, ci in candidates)
 
     # Build the cost array.
     cost = [0]
@@ -61,35 +74,51 @@ def infer_spaces(s):
 
     return " ".join(reversed(out))
 
-### Testing
 
+# -- Processing one file
+
+# Opening json
 df = pd.read_json(data_to_test_path, lines=True)
+# Keeping ads and articles, text only
 processed_df = df[df["tp"].isin(["ad", "ar"])]["ft"].dropna()
 
+# Opening output file
 with open(output_file_path, "w") as output_file:
     for article in tqdm(processed_df):
-        article = re.sub("'", "' ", article)
-        article = re.sub(r'[^a-zA-ZÀ-ÿ\-\' ]', ' ', article)
+        # Transforming all end of sentences into "."
         article = re.sub(r'[!?:]', '.', article)
-        token_list = nltk.word_tokenize(article)
+        # Keeping only alphas, "-", "'", and "."
+        article = re.sub(r'[^a-zA-ZÀ-ÿ\-\'. ]', ' ', article)
+        # Tokenizing
+        token_list = tokenizer.tokenize(article)
+        count_written = 0
         for token in token_list:
-            if token == ".":
+            # If "." end of line
+            if token == "." and count_written > 0:
                 output_file.write("\n")
-                #print("\n")
+                count_written = 0
+            # If first letter is upper and next letter is lower, keep it (proper nouns)
             elif token[0:1].isupper() and token[1:2].islower():
                 output_file.write(token.lower() + " ")
-                #print(token.lower(), end=" ")
-            elif token.isalpha():
+                count_written += 1
+            # If it's alpha or contains "'" and "-", proceed
+            elif token.isalpha() or ("'" in token) or ("-" in token):
                 token_lower = token.lower()
+                # If it's dictionary, keep it
                 if token_lower in words:
                     output_file.write(token_lower + " ")
-                    #print(token_lower, end=" ")
+                    count_written += 1
+                # Else try to split it
                 else:
                     token_lower = re.sub("-", "", token_lower)
                     splited_token = infer_spaces(token_lower)
-                    splited_token_list = nltk.word_tokenize(splited_token)
+                    splited_token_list = tokenizer.tokenize(splited_token)
                     test_word_ok = [tested_token in words for tested_token in splited_token_list]
+                    # If all word are in dictionary, keep them
                     if np.sum(test_word_ok) == len(test_word_ok):
                         output_file.write(splited_token + " ")
-                        #print(splited_token, end=" ")
-        output_file.write("\n")
+                        count_written += len(test_word_ok)
+        # End of article
+        if count_written > 0:
+            output_file.write("\n")
+            count_written = 0
