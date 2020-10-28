@@ -1,7 +1,5 @@
 from nltk.corpus import wordnet as wn
 
-
-
 dog_synset = wn.synset("dog.n.01")
 
 dog_lemmas = dog_synset.lemmas()

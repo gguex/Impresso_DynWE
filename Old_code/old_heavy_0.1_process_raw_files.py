@@ -89,7 +89,7 @@ for _, _, files in os.walk(in_folder_path):
         with open(out_folder_path + file[:len(file) - 10] + ".txt", "w") as output_file:
             for article in tqdm(processed_df):
                 # Transforming all end of sentences into "."
-                article = re.sub(r'[!?:]', '.', article)
+                article = re.sub(r'[!?:]', '..', article)
                 # Keeping only alphas, "-", "'", and "."
                 article = re.sub(r'[^a-zA-ZÀ-ÿ\-\'. ]', ' ', article)
                 # Tokenizing

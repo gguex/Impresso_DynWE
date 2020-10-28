@@ -9,17 +9,17 @@ from scipy.linalg import orthogonal_procrustes
 from sklearn.metrics.pairwise import cosine_similarity
 
 # Corpus file path
-file_path = "/home/gguex/Documents/data/impresso/JDG_line_sent/JDG-1997_sent.txt"
+file_path = "/home/gguex/Documents/data/impresso/JDG_text_only_new/JDG-1997.txt"
 
 # Name of output_file
-output_file = "Gride_search_results.txt"
+output_file = "Grid_search_results.txt"
 
 if not os.path.exists(output_file):
     with open(output_file, "w") as file:
         file.write("Création du fichier le {0}\n".format(datetime.datetime.now()))
 
 with open(output_file, "a") as file:
-    file.write("Gride search sur le fichier {0} le {1}\n".format(file_path, datetime.datetime.now()))
+    file.write("Grid search sur le fichier {0} le {1}\n".format(file_path, datetime.datetime.now()))
     file.write("win_size;vec_size;neg_sam;ns_exp;samp_size;" +
                "n_mc;n_rg;n_simlex;n_ws353;n_msimlex;n_all;n_cosine;" +
                "pval_mc;pval_rg;pval_simlex;pval_ws353;pval_msimlex;pval_all;sd_cosine;" +
