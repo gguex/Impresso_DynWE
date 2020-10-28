@@ -1,5 +1,5 @@
-# Test WE on one file with Word2Vec
-from gensim.models import Word2Vec, KeyedVectors
+# Test WE on one file with Fasttext
+from gensim.models import FastText, KeyedVectors
 import pandas as pd
 import numpy as np
 import os
@@ -12,7 +12,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 file_path = "/home/gguex/Documents/data/impresso/JDG_text_only_new/JDG-1997.txt"
 
 # Name of output_file
-output_file = "Grid_search_results_W2V.txt"
+output_file = "Grid_search_results_FT.txt"
 
 # Hyperparameters tested
 tested_windows_values = [3, 5, 7, 10, 12, 15]
@@ -28,7 +28,7 @@ if not os.path.exists(output_file):
 
 # Noting experiment metadata and colnames
 with open(output_file, "a") as file:
-    file.write("Grid search W2V sur le fichier {0} le {1}\n".format(file_path, datetime.datetime.now()))
+    file.write("Grid search FT sur le fichier {0} le {1}\n".format(file_path, datetime.datetime.now()))
     file.write("win_size;vec_size;neg_sam;ns_exp;samp_size;" +
                "n_mc;n_rg;n_simlex;n_ws353;n_msimlex;n_all;n_cosine;" +
                "pval_mc;pval_rg;pval_simlex;pval_ws353;pval_msimlex;pval_all;sd_cosine;" +
@@ -57,7 +57,7 @@ for vec_size in tested_vectors_size:
                         neg_sam, ns_exp, samp_size))
 
                     # Model training
-                    model = Word2Vec(corpus_file=file_path,
+                    model = FastText(corpus_file=file_path,
                                      min_count=100,
                                      window=win_size,
                                      size=vec_size,
