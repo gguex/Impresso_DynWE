@@ -1,4 +1,4 @@
-from Tests import neighboring_words as nw
+from tests import neighboring_words as nw
 import pandas as pd
 from scipy import stats
 import numpy as np
