@@ -9,13 +9,13 @@ import multiprocessing as mp
 # -------------------------------------
 
 # Date range
-date_range = list(range(1989, 1999))
+year_range = list(range(1989, 1999))
 # Input folder path
-input_folder_path = "/home/gguex/Documents/data/impresso/GDL/"
+input_folder_path = "/home/gguex/Documents/data/impresso/GDL"
 # Output folder path
-output_folder_path = "/home/gguex/Documents/data/impresso/GDL_text_only/"
+output_folder_path = "/home/gguex/Documents/data/impresso/GDL_text_only"
 # List of files to process
-input_file_list = [f"GDL-{date}.jsonl.bz2" for date in date_range]
+input_file_list = [f"GDL-{year}.jsonl.bz2" for year in year_range]
 # Keep advertisement parameter
 keep_ad = False
 
@@ -51,7 +51,7 @@ def process_article(article):
 for input_file in tqdm(input_file_list):
 
     # Opening json
-    df = pd.read_json(f"{input_folder_path}{input_file}", lines=True)
+    df = pd.read_json(f"{input_folder_path}/{input_file}", lines=True)
 
     # Keeping ads or not
     if keep_ad:
@@ -64,7 +64,7 @@ for input_file in tqdm(input_file_list):
         process_article_list = pool.map(process_article, processed_df)
 
     # Write text
-    with open(f"{output_folder_path}{input_file[:-10]}.txt", "w") as output_file:
+    with open(f"{output_folder_path}/{input_file[:-10]}.txt", "w") as output_file:
         for article_string in process_article_list:
             if len(article_string) > 0:
                 output_file.write(article_string + "\n")

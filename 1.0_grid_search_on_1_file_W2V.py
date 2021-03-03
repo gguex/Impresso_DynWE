@@ -7,6 +7,11 @@ import datetime
 from scipy import stats
 from scipy.linalg import orthogonal_procrustes
 from sklearn.metrics.pairwise import cosine_similarity
+import multiprocessing as mp
+
+# -------------------------------------
+# --- Parameters
+# -------------------------------------
 
 # Corpus file path
 file_path = "/home/gguex/Documents/data/impresso/JDG_text_only_new/JDG-1997.txt"
@@ -20,6 +25,13 @@ tested_vectors_size = [300]
 tested_negative_sample = [10, 15, 20, 25, 30]
 tested_ns_exponent = [0.85, 0.75, 0.65]
 tested_sample_size = [1e-3, 1e-4, 1e-5]
+
+# Number of cpus to use
+n_cpu = mp.cpu_count()
+
+# -------------------------------------
+# --- Process
+# -------------------------------------
 
 # Creating file if it doesn't exist
 if not os.path.exists(output_file):
@@ -65,7 +77,7 @@ for vec_size in tested_vectors_size:
                                      negative=neg_sam,
                                      alpha=0.025,
                                      ns_exponent=ns_exp,
-                                     workers=8,
+                                     workers=n_cpu,
                                      sg=1)
 
                     # Get the vocabulary
