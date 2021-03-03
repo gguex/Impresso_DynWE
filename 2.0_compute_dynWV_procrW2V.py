@@ -1,5 +1,5 @@
 import os
-from datetime import date
+from datetime import datetime
 import pandas as pd
 from gensim.models import Word2Vec
 import multiprocessing as mp
@@ -10,7 +10,7 @@ from scipy.linalg import orthogonal_procrustes
 # --- Parameters
 # -------------------------------------
 
-# Date range
+# Year range
 year_range = list(range(1989, 1999))
 # Reference year
 ref_year = 1997
@@ -47,7 +47,7 @@ else:
 # Write metadata
 with open(f"{result_folder}/metadata.txt", "w") as meta_file:
     meta_file.write(f"W2V orthogonal procrustes model (Histwords)\n"
-                    f"{date.today()}\n"
+                    f"{datetime.now()}\n"
                     f"year_range = {year_range}\n"
                     f"ref_year = {ref_year}\n"
                     f"window_range = {window_range}\n"
@@ -75,9 +75,11 @@ ref_model = Word2Vec(corpus_file=f"{input_folder_path}/{ref_year}.txt",
 # Get ref vocab and vectors
 ref_vocab = list(ref_model.wv.vocab.keys())
 ref_vectors = ref_model.wv.__getitem__(ref_vocab)
+ref_freq = [ref_model.wv.vocab.get(word).count for word in ref_vocab]
 
 # Save ref model
 ref_df = pd.DataFrame(ref_vectors, index=ref_vocab)
+ref_df = pd.concat([pd.DataFrame(ref_freq, index=ref_vocab), ref_df], axis=1)
 ref_df.to_csv(f"{result_folder}/{ref_year}_vectors.csv", header=False)
 
 # Loop on years
@@ -97,6 +99,7 @@ for year in tqdm(year_range):
     # Get year vocab and vectors
     year_vocab = list(year_model.wv.vocab.keys())
     year_vectors = year_model.wv.__getitem__(year_vocab)
+    year_freq = [year_model.wv.vocab.get(word).count for word in year_vocab]
 
     # Align the year on ref
     common_vocab = list(set(ref_vocab) & set(year_vocab))
@@ -107,4 +110,5 @@ for year in tqdm(year_range):
 
     # Save year model
     year_df = pd.DataFrame(aligned_year_vectors, index=year_vocab)
+    year_df = pd.concat([pd.DataFrame(year_freq, index=year_vocab), year_df], axis=1)
     year_df.to_csv(f"{result_folder}/{year}_vectors.csv", header=False)
