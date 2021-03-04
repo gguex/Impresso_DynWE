@@ -182,4 +182,30 @@ class DynamicWordEmbedding:
             # Save vectors
             self.embedding_list.append(np.array(embedding_df.drop([0, 1], axis=1)))
 
+    def get_words_freq(self, word_list, relative_frequency=False):
+
+        # Create df for output
+        output_df = pd.DataFrame(columns=self.embedding_name_list)
+        # If word_list is not a list, change it
+        if word_list.__class__.__name__ != "list":
+            word_list = [word_list]
+        # Loop on word list
+        for i, word in enumerate(word_list):
+            frequency_dict = {}
+            # Loop on embeddings
+            for j, vocab in enumerate(self.vocab_list):
+                if word in vocab:
+                    word_frequency = self.freq_list[j][vocab.index(word)]
+                    if not relative_frequency:
+                        frequency_dict[self.embedding_name_list[j]] = word_frequency
+                    else:
+                        frequency_dict[self.embedding_name_list[j]] = word_frequency / sum(self.freq_list[j])
+                else:
+                    frequency_dict[self.embedding_name_list[j]] = 0
+            # Add to df
+            row_to_add = pd.Series(frequency_dict, name=word)
+            output_df = output_df.append(row_to_add)
+
+        # Return df
+        return output_df
 
