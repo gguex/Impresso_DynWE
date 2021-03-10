@@ -294,9 +294,11 @@ class DynamicWordEmbedding:
             UserWarning("The value of 'step' can't be 0, setting it to 1")
             index_list = list(range(start, dict_length, 1))
 
+        # Loop on the series
         output_list = []
         column_name_list = []
-        # Loop on the series
+        old_df = []
+        old_name = ""
         for i, ind in enumerate(index_list):
             # If first iteration, create old values
             if i == 0:
