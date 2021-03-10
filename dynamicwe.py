@@ -3,6 +3,7 @@ import numpy as np
 from gensim.models import Word2Vec
 from tqdm import tqdm
 from scipy.linalg import orthogonal_procrustes
+from sklearn.metrics.pairwise import cosine_similarity
 from datetime import datetime
 import pandas as pd
 import json
@@ -182,7 +183,7 @@ class DynamicWordEmbedding:
             # Save vectors
             self.embedding_list.append(np.array(embedding_df.drop([0, 1], axis=1)))
 
-    def get_words_freq(self, word_list, relative_frequency=False):
+    def word_freq_series(self, word_list, relative_freq=False):
 
         # Create df for output
         output_df = pd.DataFrame(columns=self.embedding_name_list)
@@ -196,7 +197,7 @@ class DynamicWordEmbedding:
             for j, vocab in enumerate(self.vocab_list):
                 if word in vocab:
                     word_frequency = self.freq_list[j][vocab.index(word)]
-                    if not relative_frequency:
+                    if not relative_freq:
                         frequency_dict[self.embedding_name_list[j]] = word_frequency
                     else:
                         frequency_dict[self.embedding_name_list[j]] = word_frequency / sum(self.freq_list[j])
@@ -209,3 +210,124 @@ class DynamicWordEmbedding:
         # Return df
         return output_df
 
+    def word_vector_series(self, word_list):
+
+        # If word_list is not a list, change it
+        if word_list.__class__.__name__ != "list":
+            word_list = [word_list]
+
+        # The output dictonary
+        output_dict = {}
+        # Loop on embedding_name
+        for i, embedding_name in enumerate(self.embedding_name_list):
+            # Get the dimension of the embedding
+            _, embedding_dim = self.embedding_list[i].shape
+            # Create a NaN DataFrame
+            embedding_df = pd.DataFrame(np.full([len(word_list), embedding_dim], np.nan), index=word_list)
+            # Loop on word in the list
+            for word in word_list:
+                # If it exists, change the value
+                if word in self.vocab_list[i]:
+                    word_id = self.vocab_list[i].index(word)
+                    embedding_df.loc[word, :] = self.embedding_list[i][word_id, :]
+            # Add the the output dictionary
+            output_dict[embedding_name] = embedding_df
+
+        return output_dict
+
+    def cosine_sim_series(self, word_list):
+
+        # If word_list is not a list, change it
+        if word_list.__class__.__name__ != "list":
+            word_list = [word_list]
+
+        # If 1 word return empty list, if 2 words return list, else return dict
+        if len(word_list) == 1:
+            return []
+        else:
+            cosine_list = []
+            cosine_dict = {}
+            # Loop on embeddings
+            for i, embedding in enumerate(self.embedding_list):
+                # Make a empty sim matrix
+                sim_matrix = np.full([len(word_list), len(word_list)], np.nan)
+                # Indices of word_list in vocab_list
+                index_present = [self.vocab_list[i].index(word) for word in word_list if word in self.vocab_list[i]]
+                # If none, return empty list
+                if len(index_present) == 0:
+                    cosine_list.append(np.nan)
+                    cosine_dict[self.embedding_name_list[i]] = \
+                        pd.DataFrame(sim_matrix, columns=word_list, index=word_list)
+                    continue
+                # Indices of vocab_list in word_list
+                index_in_sim_present = np.array([j for j, word in enumerate(word_list) if word in self.vocab_list[i]])
+                # Compute the cosine sim matrix of present words
+                cosine_sim_present = cosine_similarity(embedding[index_present])
+                # Fill the value for present words
+                sim_matrix[index_in_sim_present[:, np.newaxis], index_in_sim_present] = cosine_sim_present
+                # If only 2 words, keep only 1 value, otherwise keep the whole matrix
+                if len(word_list) == 2:
+                    cosine_list.append(sim_matrix[0, 1])
+                else:
+                    cosine_df = pd.DataFrame(sim_matrix, columns=word_list, index=word_list)
+                    cosine_dict[self.embedding_name_list[i]] = cosine_df
+
+            # Return the dict or the list
+            if len(word_list) == 2:
+                return cosine_list
+            else:
+                return cosine_dict
+
+    def cosine_autosim_series(self, word_list, start=0, step=1):
+
+        # Get the word vectors from word list
+        word_vectors_dict = self.word_vector_series(word_list)
+        # The length of series
+        dict_length = len(word_vectors_dict)
+
+        # Forward or backward pass
+        if step > 0:
+            index_list = list(range(start, dict_length, int(np.ceil(step))))
+        elif step < 0:
+            index_list = list(range(start, -1, int(np.floor(step))))
+        else:
+            UserWarning("The value of 'step' can't be 0, setting it to 1")
+            index_list = list(range(start, dict_length, 1))
+
+        output_list = []
+        column_name_list = []
+        # Loop on the series
+        for i, ind in enumerate(index_list):
+            # If first iteration, create old values
+            if i == 0:
+                old_name = self.embedding_name_list[ind]
+                old_df = word_vectors_dict[old_name]
+            else:
+                # Get new values
+                new_name = self.embedding_name_list[ind]
+                new_df = word_vectors_dict[new_name]
+                auto_cosine_list = []
+                # Loop on words
+                for word in word_list:
+                    old_vec = old_df.loc[word]
+                    new_vec = new_df.loc[word]
+                    # Get cosine if vector exists
+                    if not (old_vec.isnull().values.any() or new_vec.isnull().values.any()):
+                        auto_cosine_list.append(cosine_similarity(np.array([old_vec, new_vec]))[0, 1])
+                    else:
+                        auto_cosine_list.append(np.nan)
+                # Store in list
+                output_list.append(auto_cosine_list)
+                # Update name list
+                column_name_list.append(f"{old_name} -> {new_name}")
+                # Update old value
+                old_name = new_name
+                old_df = new_df
+
+        return pd.DataFrame(np.array(output_list).T, index=word_list, columns=column_name_list)
+
+
+def load(input_folder):
+    output_dyn_emb = DynamicWordEmbedding()
+    output_dyn_emb.load(input_folder)
+    return output_dyn_emb
