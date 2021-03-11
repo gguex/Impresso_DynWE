@@ -328,6 +328,52 @@ class DynamicWordEmbedding:
 
         return pd.DataFrame(np.array(output_list).T, index=word_list, columns=column_name_list)
 
+    def neighbors_series(self, word_list, n_top=10, mult_factors=None):
+
+        # If word_list is not a list, change it
+        if word_list.__class__.__name__ != "list":
+            word_list = [word_list]
+
+        # If mult_factors is None, set it to the mean
+        if mult_factors is None:
+            mult_factors = [[1/len(word_list)] * len(word_list)] * len(self.embedding_name_list)
+        # If mult_factors is not a list of list, duplicate the list
+        elif mult_factors[0].__class__.__name__ != "list":
+            mult_factors = [mult_factors] * len(self.embedding_name_list)
+
+        output_list = []
+        # Loop on embeddings
+        for i, embedding in enumerate(self.embedding_list):
+
+            # Indices of word_list in vocab_list
+            index_present = [self.vocab_list[i].index(word) for word in word_list if word in self.vocab_list[i]]
+            # If not all words are present, output None and Nan
+            if len(index_present) < len(word_list):
+                top_neighbor_list = [None] * n_top
+                top_cosine_list = [np.nan] * n_top
+            else:
+                # The mean vector
+                word_vector = embedding[index_present].T.dot(mult_factors[i])
+                # The norm of the vector
+                word_norm = np.sqrt(np.sum(word_vector ** 2))
+                # The list of all norms
+                word_norm_list = np.sqrt(np.sum(embedding ** 2, axis=1))
+                # Compute the cosine
+                cosine_list = embedding.dot(word_vector) / (word_norm_list * word_norm)
+                # Get the top n indices
+                top_id_list = np.flip(np.argsort(cosine_list)[-n_top:])
+                # Get the top cosine similarities list
+                top_cosine_list = cosine_list[top_id_list]
+                # Ge the top neighboring words list
+                top_neighbor_list = np.array(self.vocab_list[i])[top_id_list]
+
+            # Appends to the list
+            output_list.append(top_neighbor_list)
+            output_list.append(top_cosine_list)
+
+        # Return the dataframe
+        return pd.DataFrame(np.array(output_list).T, columns=np.repeat(self.embedding_name_list, 2))
+
 
 def load(input_folder):
     output_dyn_emb = DynamicWordEmbedding()
