@@ -336,7 +336,7 @@ class DynamicWordEmbedding:
 
         # If mult_factors is None, set it to the mean
         if mult_factors is None:
-            mult_factors = [[1/len(word_list)] * len(word_list)] * len(self.embedding_name_list)
+            mult_factors = [[1 / len(word_list)] * len(word_list)] * len(self.embedding_name_list)
         # If mult_factors is not a list of list, duplicate the list
         elif mult_factors[0].__class__.__name__ != "list":
             mult_factors = [mult_factors] * len(self.embedding_name_list)
@@ -378,4 +378,16 @@ class DynamicWordEmbedding:
 def load(input_folder):
     output_dyn_emb = DynamicWordEmbedding()
     output_dyn_emb.load(input_folder)
+    return output_dyn_emb
+
+
+def build_with_aligned_w2v(corpora_folder, corpus_list=None, embedding_name_list=None, ref_name=None, min_count=100,
+                           window=10, size=300, sample=1e-5, negative=10, alpha=0.025, ns_exponent=0.75, workers=6,
+                           sg=1):
+    output_dyn_emb = DynamicWordEmbedding()
+    output_dyn_emb.build_with_aligned_w2v(corpora_folder, corpus_list=corpus_list,
+                                          embedding_name_list=embedding_name_list, ref_name=ref_name,
+                                          min_count=min_count, window=window, size=size, sample=sample,
+                                          negative=negative, alpha=alpha, ns_exponent=ns_exponent, workers=workers,
+                                          sg=sg)
     return output_dyn_emb
