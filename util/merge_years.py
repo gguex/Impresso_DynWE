@@ -24,7 +24,7 @@ GDL_folder = "/home/gguex/Documents/data/impresso/GDL_text_only/"
 # Output folder
 output_folder = "/home/gguex/Documents/data/impresso/by_year_new/"
 # Threshold for words
-word_threshold = 500
+word_threshold = None
 
 # -------------------------------------
 # --- Computation
