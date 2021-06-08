@@ -30,25 +30,37 @@ word_threshold = 500
 # --- Computation
 # -------------------------------------
 
-for year_bin in tqdm(year_bin_list):
-    out_date = year_bin[0]
-    with open(f"{output_folder}{out_date}.txt", 'w') as outfile:
-        for in_date in year_bin:
-            with open(f"{JDG_folder}JDG-{in_date}.txt") as JDG_infile, \
-                    open(f"{GDL_folder}GDL-{in_date}.txt") as GDL_infile:
-                JDG_text = JDG_infile.read()
-                GDL_text = GDL_infile.read()
-                tokens = word_tokenize(JDG_text + " " + GDL_text)
-                freq_dic = FreqDist(tokens)
-                for line in JDG_text.split("\n"):
-                    line_tokens = line.split()
-                    kept_tokens = [token for token in line_tokens if freq_dic[token] >= word_threshold]
-                    if len(kept_tokens) > 0:
-                        outfile.write(" ".join(kept_tokens))
-                        outfile.write("\n")
-                for line in GDL_text.split("\n"):
-                    line_tokens = line.split()
-                    kept_tokens = [token for token in line_tokens if freq_dic[token] >= word_threshold]
-                    if len(kept_tokens) > 0:
-                        outfile.write(" ".join(kept_tokens))
-                        outfile.write("\n")
+if word_threshold is None:
+    for year_bin in tqdm(year_bin_list):
+        out_date = year_bin[0]
+        with open(f"{output_folder}{out_date}.txt", 'w') as outfile:
+            for in_date in year_bin:
+                with open(f"{JDG_folder}JDG-{in_date}.txt") as infile:
+                    for line in infile:
+                        outfile.write(line)
+                with open(f"{GDL_folder}GDL-{in_date}.txt") as infile:
+                    for line in infile:
+                        outfile.write(line)
+else:
+    for year_bin in tqdm(year_bin_list):
+        out_date = year_bin[0]
+        with open(f"{output_folder}{out_date}.txt", 'w') as outfile:
+            for in_date in year_bin:
+                with open(f"{JDG_folder}JDG-{in_date}.txt") as JDG_infile, \
+                        open(f"{GDL_folder}GDL-{in_date}.txt") as GDL_infile:
+                    JDG_text = JDG_infile.read()
+                    GDL_text = GDL_infile.read()
+                    tokens = word_tokenize(JDG_text + " " + GDL_text)
+                    freq_dic = FreqDist(tokens)
+                    for line in JDG_text.split("\n"):
+                        line_tokens = line.split()
+                        kept_tokens = [token for token in line_tokens if freq_dic[token] >= word_threshold]
+                        if len(kept_tokens) > 0:
+                            outfile.write(" ".join(kept_tokens))
+                            outfile.write("\n")
+                    for line in GDL_text.split("\n"):
+                        line_tokens = line.split()
+                        kept_tokens = [token for token in line_tokens if freq_dic[token] >= word_threshold]
+                        if len(kept_tokens) > 0:
+                            outfile.write(" ".join(kept_tokens))
+                            outfile.write("\n")
