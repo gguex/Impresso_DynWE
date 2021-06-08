@@ -9,7 +9,7 @@ import multiprocessing as mp
 # -------------------------------------
 
 # Date range
-year_range = list(range(1989, 1999))
+year_range = list(range(1950, 1989))
 # Input folder path
 input_folder_path = "/home/gguex/Documents/data/impresso/GDL"
 # Output folder path
