@@ -11,16 +11,17 @@ import multiprocessing as mp
 # Date range
 year_range = list(range(1950, 1989))
 # Input folder path
-input_folder_path = "/home/gguex/Documents/data/impresso/GDL"
+input_folder_path = "/home/gguex/Documents/data/impresso/JDG"
 # Output folder path
-output_folder_path = "/home/gguex/Documents/data/impresso/GDL_text_only"
+output_folder_path = "/home/gguex/Documents/data/impresso/JDG_text_only"
 # List of files to process
-input_file_list = [f"GDL-{year}.jsonl.bz2" for year in year_range]
+input_file_list = [f"JDG-{year}.jsonl.bz2" for year in year_range]
 # Keep advertisement parameter
 keep_ad = False
 
 # Number of cpus to use
 n_cpu = mp.cpu_count()
+
 
 # -------------------------------------
 # --- Process
@@ -47,6 +48,7 @@ def process_article(article):
             string_output += f"{sentence_treated}\n"
 
     return string_output
+
 
 for input_file in tqdm(input_file_list):
 
