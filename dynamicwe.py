@@ -21,7 +21,7 @@ class DynamicWordEmbedding:
         self.metadata = {}
 
     def build_with_aligned_w2v_ref(self, corpora_folder, corpus_list=None, embedding_name_list=None, ref_name=None,
-                                   min_count=100, window=10, size=300, sample=1e-5, negative=10, alpha=0.025,
+                                   min_count=100, window=5, size=300, sample=1e-5, negative=10, alpha=0.025,
                                    ns_exponent=0.75, workers=6, sg=1):
 
         # Folder and corpus list error management
@@ -122,7 +122,7 @@ class DynamicWordEmbedding:
                              "ns_exponent": ns_exponent, "sg": sg}
 
     def build_with_aligned_w2v(self, corpora_folder, corpus_list=None, embedding_name_list=None,
-                               min_count=100, window=10, size=300, sample=1e-5, negative=10, alpha=0.025,
+                               min_count=100, window=5, size=300, sample=1e-5, negative=10, alpha=0.025,
                                ns_exponent=0.75, workers=6, sg=1):
 
         # Folder and corpus list error management
@@ -213,6 +213,9 @@ class DynamicWordEmbedding:
                          "corpus_list": corpus_list, "ref_name": self.ref_name, "min_count": min_count,
                          "window": window, "size": size, "sample": sample, "negative": negative, "alpha": alpha,
                          "ns_exponent": ns_exponent, "sg": sg}
+
+    def build_with_svd_ppmi(self, corpora_folder, corpus_list=None, embedding_name_list=None, min_count=100, window=10):
+        to_do = True
 
     def save(self, output_folder, overwrite=False):
 

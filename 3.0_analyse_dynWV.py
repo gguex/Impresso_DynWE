@@ -12,6 +12,6 @@ dyn_we.word_vector_series(["fluor"])
 
 dyn_we.cosine_sim_series(["chocolat", "rêve", "lgksn"])
 
-all_changes = dyn_we.cosine_autosim_series(dyn_we.common_vocab, step=9)
+all_changes = dyn_we.cosine_autosim_series(dyn_we.common_vocab, step=1)
 
-neighbour = dyn_we.neighbors_series("église", n_top=20)
+neighbour = dyn_we.neighbors_series("trésor", n_top=20)
