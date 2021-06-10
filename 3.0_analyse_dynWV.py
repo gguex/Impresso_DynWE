@@ -6,12 +6,16 @@ import dynamicwe as dwe
 
 dyn_we = dwe.load("/home/gguex/Documents/data/impresso/embeddings/w2v/wv_test_2")
 
-dyn_we.word_freq_series(["amour", "haine", "chocolat"])
+common_word_freq = dyn_we.word_freq_series(dyn_we.common_vocab)
+common_word_freq["sum"] = common_word_freq.sum(axis=1)
+top1000_word = list(common_word_freq.nlargest(1000, "sum").index)
+
 
 dyn_we.word_vector_series(["fluor"])
 
 dyn_we.cosine_sim_series(["chocolat", "rêve", "lgksn"])
 
-all_changes = dyn_we.cosine_autosim_series(dyn_we.common_vocab, step=1)
+all_changes = dyn_we.cosine_autosim_series(top1000_word)
+all_changes["sum"] = all_changes.sum(axis=1)
 
-neighbour = dyn_we.neighbors_series("trésor", n_top=20)
+neighbour = dyn_we.neighbors_series("romande", n_top=50)

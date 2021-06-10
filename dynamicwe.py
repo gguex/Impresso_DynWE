@@ -7,6 +7,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from datetime import datetime
 import pandas as pd
 import json
+import itertools
 
 
 class DynamicWordEmbedding:
@@ -437,7 +438,7 @@ class DynamicWordEmbedding:
         elif mult_factors[0].__class__.__name__ != "list":
             mult_factors = [mult_factors] * len(self.embedding_name_list)
 
-        output_list = []
+        topn_word_dict_list = []
         # Loop on embeddings
         for i, embedding in enumerate(self.embedding_list):
 
@@ -445,9 +446,8 @@ class DynamicWordEmbedding:
             index_present = [self.vocab_list[i].index(word) for word in word_list if word in self.vocab_list[i]]
             # If not all words are present, output None and Nan
             if len(index_present) < len(word_list):
-                top_neighbor_list = [None] * n_top
-                top_cosine_list = [np.nan] * n_top
-            else:
+                topn_word_dict_list.append({})
+            if len(index_present) == len(word_list):
                 # The mean vector
                 word_vector = embedding[index_present].T.dot(mult_factors[i])
                 # The norm of the vector
@@ -462,13 +462,16 @@ class DynamicWordEmbedding:
                 top_cosine_list = cosine_list[top_id_list]
                 # Ge the top neighboring words list
                 top_neighbor_list = np.array(self.vocab_list[i])[top_id_list]
+                topn_word_dict_list.append(dict(zip(top_neighbor_list, top_cosine_list)))
 
-            # Appends to the list
-            output_list.append(top_neighbor_list)
-            output_list.append(top_cosine_list)
-
-        # Return the dataframe
-        return pd.DataFrame(np.array(output_list).T, columns=np.repeat(self.embedding_name_list, 2))
+        # Get common_voc
+        common_voc = set(itertools.chain.from_iterable([cos_dict.keys() for cos_dict in topn_word_dict_list]))
+        # Create df
+        output_df = pd.DataFrame(index=common_voc)
+        for i, embed_name in enumerate(self.embedding_name_list):
+            output_df = pd.concat([output_df, pd.Series(topn_word_dict_list[i], name=embed_name)], axis=1)
+        # Return df
+        return output_df
 
 
 def load(input_folder):
@@ -477,12 +480,12 @@ def load(input_folder):
     return output_dyn_emb
 
 
-def build_with_aligned_w2v(corpora_folder, corpus_list=None, embedding_name_list=None, ref_name=None, min_count=100,
+def build_with_aligned_w2v(corpora_folder, corpus_list=None, embedding_name_list=None, min_count=100,
                            window=10, size=300, sample=1e-5, negative=10, alpha=0.025, ns_exponent=0.75, workers=6,
                            sg=1):
     output_dyn_emb = DynamicWordEmbedding()
     output_dyn_emb.build_with_aligned_w2v(corpora_folder, corpus_list=corpus_list,
-                                          embedding_name_list=embedding_name_list, ref_name=ref_name,
+                                          embedding_name_list=embedding_name_list,
                                           min_count=min_count, window=window, size=size, sample=sample,
                                           negative=negative, alpha=alpha, ns_exponent=ns_exponent, workers=workers,
                                           sg=sg)

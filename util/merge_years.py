@@ -16,13 +16,13 @@ year_bin_list = [list(range(1950, 1955)),
                  list(range(1985, 1990)),
                  list(range(1990, 1995)),
                  list(range(1995, 1999))]
-year_bin_list = [[1989], [1990], [1991], [1992], [1993], [1994], [1995], [1996], [1997], [1998]]
+#year_bin_list = [[1989], [1990], [1991], [1992], [1993], [1994], [1995], [1996], [1997], [1998]]
 # folder JDG
 JDG_folder = "/home/gguex/Documents/data/impresso/JDG_text_only/"
 # folder GDL
 GDL_folder = "/home/gguex/Documents/data/impresso/GDL_text_only/"
 # Output folder
-output_folder = "/home/gguex/Documents/data/impresso/by_year_new/"
+output_folder = "/home/gguex/Documents/data/impresso/by_5year/"
 # Threshold for words
 word_threshold = None
 
@@ -37,10 +37,12 @@ if word_threshold is None:
             for in_date in year_bin:
                 with open(f"{JDG_folder}JDG-{in_date}.txt") as infile:
                     for line in infile:
-                        outfile.write(line)
+                        if bool(line.strip()):
+                            outfile.write(line)
                 with open(f"{GDL_folder}GDL-{in_date}.txt") as infile:
                     for line in infile:
-                        outfile.write(line)
+                        if bool(line.strip()):
+                            outfile.write(line)
 else:
     for year_bin in tqdm(year_bin_list):
         out_date = year_bin[0]
