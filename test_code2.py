@@ -8,7 +8,7 @@ from scipy import stats
 # --- Parameters
 # -------------------------------------
 
-dyn_we = dwe.load("/home/gguex/Documents/data/impresso/embeddings/w2v/wv_test_1")
+#dyn_we = dwe.load("/home/gguex/Documents/data/impresso/embeddings/w2v/wv_test_1")
 
 # Words analogy datasets
 eval_data_list = ["fr_mc.csv", "fr_rg.csv", "fr_simlex.csv", "fr_ws353.csv", "multi_simlex.csv", "fr_all.csv"]
@@ -42,3 +42,5 @@ for i, embedding in enumerate(dyn_we.embedding_list):
 
 result_df = pd.DataFrame(result_array, index=dyn_we.embedding_name_list,
                          columns=np.repeat(list(eval_data_dict.keys()), 2))
+
+result_df.to_csv("some_results/analogy_ref_res.csv")
