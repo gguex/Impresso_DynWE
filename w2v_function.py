@@ -170,8 +170,8 @@ weights = word2vec.get_layer('w2v_embedding').get_weights()[0]
 vocab = vectorize_layer.get_vocabulary()
 
 # Save vectors
-out_v = io.open('vectors_1989.tsv', 'w', encoding='utf-8')
-out_m = io.open('metadata_1989.tsv', 'w', encoding='utf-8')
+out_v = io.open('some_results/vectors_1989.tsv', 'w', encoding='utf-8')
+out_m = io.open('some_results/metadata_1989.tsv', 'w', encoding='utf-8')
 
 for index, word in enumerate(vocab):
   if index == 0:

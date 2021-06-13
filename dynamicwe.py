@@ -4,10 +4,14 @@ from gensim.models import Word2Vec
 from tqdm import tqdm
 from scipy.linalg import orthogonal_procrustes
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 from datetime import datetime
 import pandas as pd
 import json
 import itertools
+from matplotlib import pyplot as plt
+import colorsys
 
 
 class DynamicWordEmbedding:
@@ -214,9 +218,6 @@ class DynamicWordEmbedding:
                          "corpus_list": corpus_list, "ref_name": self.ref_name, "min_count": min_count,
                          "window": window, "size": size, "sample": sample, "negative": negative, "alpha": alpha,
                          "ns_exponent": ns_exponent, "sg": sg}
-
-    def build_with_svd_ppmi(self, corpora_folder, corpus_list=None, embedding_name_list=None, min_count=100, window=10):
-        to_do = True
 
     def save(self, output_folder, overwrite=False):
 
@@ -473,6 +474,68 @@ class DynamicWordEmbedding:
         # Return df
         return output_df
 
+    def plot_word_neighbors(self, word, n_neighbours=20, projection="tsne"):
+
+        # Check if the word is in common_voc
+        if word not in self.common_vocab:
+            raise AttributeError(f"The word {word} must appear in every bin")
+
+        # Get dim of vectors
+        n_dim = self.embedding_list[0].shape[1]
+
+        name_list = []
+        vector_array = np.empty((0, n_dim))
+        word_vector_array = np.empty((0, n_dim))
+        for i, embedding in enumerate(self.embedding_list):
+            # Index of the word
+            index_word = self.vocab_list[i].index(word)
+            # Word vector
+            word_vector = embedding[index_word]
+            # The norm of the vector
+            word_norm = np.sqrt(np.sum(word_vector ** 2))
+            # The list of all norms
+            word_norm_list = np.sqrt(np.sum(embedding ** 2, axis=1))
+            # Compute the cosine
+            cosine_list = embedding.dot(word_vector) / (word_norm_list * word_norm)
+            # Get the top n indices
+            top_id_list = np.flip(np.argsort(cosine_list)[-(n_neighbours + 1):])[1:]
+            # Get the top n vectors
+            top_vectors = embedding[top_id_list]
+            # Get top names
+            top_names = np.array(self.vocab_list[i])[top_id_list]
+            # Append results
+            name_list.append(word + self.embedding_name_list[i])
+
+            name_list.extend(list(top_names))
+            vector_array = np.append(vector_array, np.reshape(word_vector, (1, n_dim)), axis=0)
+            vector_array = np.append(vector_array, top_vectors, axis=0)
+
+        if projection == "tsne":
+            coords = TSNE().fit_transform(vector_array)
+        else:
+            coords = PCA().fit_transform(vector_array)
+
+        # Creating year colors
+        color_rgb_list = []
+        for i in range(len(self.embedding_list)):
+            color_rgb_list.append(np.array(colorsys.hsv_to_rgb(i * 1 / len(self.embedding_list), 1, 1)))
+        colors_pt_list = list(
+            itertools.chain.from_iterable(itertools.repeat(x, n_neighbours + 1) for x in color_rgb_list))
+
+        # Extract coordinate of the word only
+        index_word = [(i * (n_neighbours + 1)) for i in range(len(self.embedding_list))]
+        coords_word = coords[index_word, :]
+
+        # Plotting
+        fig, ax = plt.subplots()
+        ax.scatter(coords[:, 0], coords[:, 1], alpha=0.5, s=10, color=colors_pt_list)
+        ax.plot(coords_word[:, 0], coords_word[:, 1])
+
+        for i, txt in enumerate(list(name_list)):
+            ax.annotate(txt, (coords[i, 0], coords[i, 1]), size=10, alpha=0.5, color=colors_pt_list[i])
+
+        ax.grid()
+        plt.show()
 
 def load(input_folder):
     output_dyn_emb = DynamicWordEmbedding()
@@ -490,3 +553,26 @@ def build_with_aligned_w2v(corpora_folder, corpus_list=None, embedding_name_list
                                           negative=negative, alpha=alpha, ns_exponent=ns_exponent, workers=workers,
                                           sg=sg)
     return output_dyn_emb
+
+
+def compute_mean_shift(row):
+    series = np.array(row)
+    mean_shift_series = [np.mean(series[(j + 1):]) - np.mean(series[:(j + 1)]) for j in range(len(series) - 1)]
+    return mean_shift_series
+
+def meanshift_pvalue_series(series_df, n_boost=1000):
+
+    # Compute the mean shift serie
+    mean_shift_df = series_df.apply(compute_mean_shift, axis=1, result_type='expand')
+
+    # Empty df to store results
+    p_value_df = mean_shift_df.copy()
+    p_value_df.loc[:, :] = 0
+    # Bootstrap
+    for _ in tqdm(range(n_boost)):
+        perm_df = series_df.iloc[:, np.random.permutation(series_df.shape[1])]
+        mean_shift_perm_df = perm_df.apply(compute_mean_shift, axis=1, result_type='expand')
+        p_value_df += (mean_shift_perm_df > mean_shift_df)
+
+    # Return normalize p-value
+    return p_value_df / n_boost
